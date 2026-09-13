@@ -83,26 +83,22 @@ durable queue, so:
 
 These are deliberate MVP limits, not durability guarantees.
 
-## Endpoint ownership
+## Current local endpoint
 
 The gateway only makes outbound connections to Telegram and `WEBHOOK_URL`. It does
 not listen on an HTTP port and therefore does not expose an endpoint of its own.
-
-In production, `WEBHOOK_URL` belongs to the receiving system. Examples:
+For the current validation phase, the receiver is the included local test tool:
 
 ```dotenv
-# Public subscriber
-WEBHOOK_URL=https://subscriber.example.com/telegram/events
-
-# A receiver service in the same Railway project
-WEBHOOK_URL=http://event-subscriber.railway.internal:8080/telegram/events
+WEBHOOK_URL=http://127.0.0.1:8787/events
 ```
 
-The subscriber may later forward data to MetaTrader, but the gateway itself has no
-MetaTrader dependency or trading authority. The current MVP also does not attach a
-webhook authorization header. Prefer private networking for a co-located receiver;
-if the receiver is public, add authentication before treating it as production
-ready.
+`tools/test_webhook.py` listens on that address, prints accepted JSON, and returns a
+successful response. It is a validation aid, not a production subscriber.
+
+Durable delivery and fan-out to multiple owned consumers are explicitly deferred.
+Their intended sequence is documented in the
+[future roadmap](../future/durable-delivery-and-broker.md).
 
 ## Logging
 
@@ -119,5 +115,5 @@ The important log events are:
 - `event.failed`
 - `telegram.connecting`, `telegram.connected`, and reconnect lifecycle events
 
-Chat and message IDs are still metadata. Restrict access to production logs if
-those identifiers are sensitive in your threat model.
+Chat and message IDs are still metadata. Restrict access to logs if those
+identifiers are sensitive in your threat model.

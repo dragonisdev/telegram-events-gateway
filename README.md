@@ -4,6 +4,10 @@
 Telegram with a user account, listens only to an explicit chat allowlist, converts
 Telethon updates into stable JSON, and delivers each event to an HTTP webhook.
 
+The current phase is strictly local validation with a dedicated test Telegram
+account and the included test webhook receiver. It is not being deployed or
+connected to trading, Discord, or other production consumers yet.
+
 ```text
 Telegram private chat/channel
             |
@@ -13,13 +17,12 @@ Telegram private chat/channel
             |
        HTTP POST webhook
             |
-  subscriber / integration
+  local test receiver
 ```
 
-The gateway is an outbound worker, not an inbound web API. It does not need its own
-public URL. `WEBHOOK_URL` is the endpoint belonging to the downstream subscriber;
-that subscriber could eventually be a MetaTrader bridge, but MetaTrader-specific
-logic is intentionally outside this project.
+The gateway is an outbound worker, not an inbound web API. During local validation,
+`WEBHOOK_URL=http://127.0.0.1:8787/events` points to `tools/test_webhook.py` running
+on the same computer.
 
 ## MVP capabilities
 
@@ -33,15 +36,18 @@ logic is intentionally outside this project.
 - file-backed and environment-backed Telethon sessions
 - tests with mocked Telegram events and HTTP responses
 
-The project deliberately contains no PostgreSQL, Redis, queue, trading logic,
-MetaTrader integration, signal parsing, or risk management.
+The project deliberately contains no delivery database, queue, broker, trading
+logic, MetaTrader integration, Discord integration, signal parsing, or risk
+management. Future durability will use SQLite rather than PostgreSQL, Redis, SQS,
+or another hosted queue.
 
 ## Documentation
 
 - [Event model and delivery behavior](docs/feature/event-gateway.md)
 - [Telegram sessions, persistence, and security](docs/feature/session-security.md)
 - [Local setup and acceptance test](docs/deployment/local.md)
-- [Railway production deployment](docs/deployment/railway.md)
+- [Future durable delivery and event broker](docs/future/durable-delivery-and-broker.md)
+- [Deferred Railway deployment notes](docs/deployment/railway.md)
 
 ## Quick start
 

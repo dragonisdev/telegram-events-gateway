@@ -1,6 +1,15 @@
-# Railway production deployment
+# Deferred Railway deployment notes
 
-## Production shape
+> **Status:** Deferred. The current project phase is local validation with a test
+> Telegram account. Do not treat this page as an active deployment runbook or
+> provision production infrastructure yet.
+
+This reference preserves earlier Railway research for a later phase. Before it is
+used, it must be revised to include the planned SQLite durable-delivery layer and
+broker architecture described in the
+[future roadmap](../future/durable-delivery-and-broker.md).
+
+## Earlier gateway-only shape
 
 Deploy this project as one long-running worker. It connects outbound to Telegram
 and to the configured webhook; it does not run an HTTP server and does not need a
@@ -147,6 +156,6 @@ rotation procedure are in [Telegram sessions and security](../feature/session-se
 - No database-backed audit history
 - No exactly-once delivery guarantee
 
-Those limitations are acceptable for the stated MVP, but webhook authentication
-and durable delivery should be reconsidered before connecting the output directly
-to an automated trading action.
+These limitations are why Railway deployment is deferred. Local validation comes
+first; SQLite durability and a broker for owned consumers come afterward. Nothing
+in the current repository should be connected directly to automated trading.

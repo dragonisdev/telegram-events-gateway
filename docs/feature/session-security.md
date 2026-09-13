@@ -39,19 +39,18 @@ access as possession of a StringSession.
 
 ### StringSession
 
-A StringSession serializes the authorization into a single portable secret. It is
-well suited to an ephemeral worker because every deployment can reconstruct the
+A StringSession serializes the authorization into a single portable secret. It can
+later support an ephemeral worker because a deployment can reconstruct the
 authorized client from the environment without a volume.
 
-The production choice for this MVP is:
+StringSession deployment is deferred. The current local-validation choice is:
 
 ```dotenv
-TELEGRAM_SESSION=string:<generated-value>
+TELEGRAM_SESSION=file:telegram-event-gateway
 ```
 
-stored as a sealed Railway variable. This removes the persistent-volume attack
-surface, but it does not make the credential harmless: compromise of the runtime
-or deployed code can still expose it.
+Use it only with the dedicated test account. The resulting file persists between
+local runs and must remain outside Git.
 
 ## Persistence and reauthentication
 
@@ -76,8 +75,9 @@ Two-step verification protects creation of a new authorization. It does not ask
 for a second factor on every request made through an already authorized session,
 so it does not neutralize a copied session key.
 
-## What a Railway sealed variable protects
+## Deferred hosting note: sealed variables
 
+A future Railway deployment may use a StringSession stored as a sealed variable.
 A sealed variable is write-only from Railway's control plane. Railway provides its
 value to builds and running deployments, but does not display it in the dashboard
 or return it through the API. Sealed values also are not returned by
@@ -97,21 +97,18 @@ control-plane credentials, accidental copying, and exposure to preview services.
 Because Railway also provides variables during builds, repository and dependency
 integrity are part of the security boundary.
 
-For this small worker, accepting that residual runtime risk is a reasonable MVP
-decision as long as it is explicit.
+This risk decision is retained for future reference only. No Railway deployment is
+part of the current local-validation phase.
 
 ## Recommended controls
 
-- Use a dedicated Telegram account that joins only the required chats.
-- Store `TELEGRAM_SESSION`, `TELEGRAM_API_HASH`, and any credential-bearing webhook
-  URL as sealed production variables.
+- Use a dedicated test Telegram account that joins only test chats.
 - Never store a real StringSession in `.env.example`, Git, logs, tickets, or chat.
 - Keep `.env`, `*.session`, and `*.session-journal` ignored by Git.
-- Limit GitHub and Railway deployment permissions and enable account 2FA.
-- Pin and review dependencies and deploy only reviewed commits.
-- Keep the Railway worker private because it does not need inbound networking.
+- Limit access to the local machine and enable Telegram two-step verification.
+- Pin and review dependencies.
 - Review Telegram's active devices periodically.
-- Run one gateway replica to avoid duplicate listeners and webhook deliveries.
+- Do not connect the test account to production or sensitive chats.
 
 A dedicated account reduces the blast radius but does not create technical
 read-only permissions. If a Telegram bot can be added to the source chat and its
@@ -121,14 +118,14 @@ change Telegram capabilities and onboarding and are not implemented in this MVP.
 
 ## Incident response and rotation
 
-If a session may have leaked:
+If the local test session may have leaked:
 
 1. Terminate that authorization in Telegram **Settings > Devices** immediately.
-2. Generate a new StringSession locally.
-3. Replace the sealed `TELEGRAM_SESSION` value in Railway and deploy it.
-4. Review recent Telegram sessions, Railway deployments, and logs.
-5. Rotate any webhook credential or other secret that may also have been exposed.
+2. Delete the local test session file after confirming its exact path.
+3. Start the gateway and authenticate the test account again to create a new
+   session.
+4. Review recent Telegram sessions and local logs.
+5. Rotate any other secret that may also have been exposed.
 
-Do not rely on deleting the Railway variable alone: that prevents the gateway from
-using the credential but does not revoke the Telegram authorization already copied
-by an attacker.
+Deleting the local file alone is insufficient if someone copied it. Terminating the
+authorization in Telegram is what invalidates the stolen session.

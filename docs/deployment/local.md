@@ -4,7 +4,11 @@
 
 - Python 3.11 or newer
 - Telegram API credentials from [my.telegram.org/apps](https://my.telegram.org/apps)
-- A Telegram user account with access to every allowlisted chat
+- A dedicated test Telegram account
+- A private test chat or channel accessible by that account
+
+Do not use a primary personal account or production chat during this phase. The
+goal is to validate Telegram event behavior locally, not to deploy the service.
 
 ## Install
 
@@ -53,6 +57,10 @@ new code.
 Both `.env` and Telethon session files are ignored by Git. Never commit or share
 them.
 
+The `*.session` file is Telethon's SQLite-backed authorization state. It is
+separate from the future SQLite event/delivery store described in the
+[roadmap](../future/durable-delivery-and-broker.md); no event database exists yet.
+
 ## Acceptance criterion
 
 1. Send a message to an allowlisted private chat or channel.
@@ -60,6 +68,10 @@ them.
 3. Edit the Telegram message.
 4. Confirm that the receiver prints a `message.edited` payload.
 5. Confirm that no event is delivered from a chat outside the allowlist.
+6. Stop and restart the gateway, then confirm the existing session reconnects
+   without another login code.
+7. Confirm structured logs contain event metadata but not message text or session
+   data.
 
 Stop either process with `Ctrl+C`.
 
@@ -87,3 +99,10 @@ ruff check .
 
 The tests use mocked Telethon-shaped events and HTTPX transports. They do not
 contact Telegram or a real webhook.
+
+## Local validation boundary
+
+Success in this phase means the event schema, filtering, edit handling, reconnect
+behavior, local session persistence, retry behavior, and secret-safe logs have
+been observed with test data. It does not establish production durability: events
+can still be lost after retry exhaustion or while the process is offline.
